@@ -74,8 +74,9 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let font =
+    let mut font =
         load_ttf_font_from_bytes(include_bytes!("../assets/SourceSans3-Regular.ttf")).unwrap();
+    font.set_filter(FilterMode::Nearest);
     let menu_font_size: u16 = 18;
     let menu_bar = build_menu_bar();
 

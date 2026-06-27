@@ -89,7 +89,7 @@ fn draw_menu_bar(
     let menu_pad: f32 = 20.0;
     let text_height_offset: f32 = 0.65;
 
-    draw_rectangle(x_offset, y_offset, screen_width(), height, YELLOW);
+    draw_rectangle(x_offset, y_offset, screen_width(), height, WHITE);
 
     for component in component_store
         .components
@@ -97,7 +97,7 @@ fn draw_menu_bar(
         .filter(|c| c.group == Group::MenuBar)
     {
         if let Shape::Rect { x, y, w, h } = &component.shape {
-            draw_rectangle(*x, *y, *w, *h, LIGHTGRAY);
+            draw_rectangle(*x, *y, *w, *h, WHITE);
 
             draw_text_ex(
                 &component.name,
@@ -120,12 +120,18 @@ fn draw_menu_bar(
 
     let mouse_coords = format!("[ {}, {} ]", mouse_x, mouse_y);
 
-    draw_text(
+    draw_text_ex(
         &mouse_coords,
-        screen_width() / dpi_scale() - 120.0,
+        screen_width() - 120.0,
         y_offset + (height * text_height_offset),
-        font_size as f32,
-        BLACK,
+        TextParams {
+            font: Some(font),
+            font_size,
+            font_scale: 1.0,
+            font_scale_aspect: 1.0,
+            rotation: 0.0,
+            color: BLACK,
+        },
     );
 }
 
@@ -185,14 +191,14 @@ fn draw_debug(component_store: &ComponentStore) {
 fn handle_input(component_store: &ComponentStore) {
     if is_mouse_button_pressed(MouseButton::Left) {
         let (mouse_x, mouse_y) = mouse_position();
-        let mut component_clicked: &Component;
+        // component_clicked: &Component;
 
         //println!("MOUSE PRESS at [ {}, {} ]!!!!", mouse_x, mouse_y);
 
         for component in component_store.components.iter() {
             if let Shape::Rect { x, y, w, h } = &component.shape {
                 if mouse_x >= *x && mouse_x <= *x + *w && mouse_y >= *y && mouse_y <= *y + *h {
-                    component_clicked = &component;
+                    let mut component_clicked = &component;
                     println! {"{} clicked!", component_clicked.name};
                 }
             }
