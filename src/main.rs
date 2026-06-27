@@ -7,16 +7,25 @@ use crate::curl_ui::{build_menu_bar, render_ui};
 // ----------------------------------------------
 // Component Store
 // ----------------------------------------------
-
+#[derive(Debug)]
 enum Shape {
     Rect { x: f32, y: f32, w: f32, h: f32 },
 }
 
+#[derive(Debug, PartialEq)]
+enum Group {
+    Debug,
+    MenuBar,
+}
+
+#[derive(Debug)]
 struct Component {
     name: &'static str,
+    group: Group,
     shape: Shape,
 }
 
+#[derive(Debug)]
 pub struct ComponentStore {
     components: Vec<Component>,
 }
@@ -30,6 +39,16 @@ impl ComponentStore {
 
     fn clear(&mut self) {
         self.components.clear();
+    }
+
+    fn add(&mut self, component: Component) {
+        self.components.push(component);
+    }
+}
+
+impl Component {
+    pub fn new(name: &'static str, group: Group, shape: Shape) -> Self {
+        Self { name, shape, group }
     }
 }
 
