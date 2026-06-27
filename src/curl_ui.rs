@@ -1,6 +1,6 @@
-use macroquad::prelude::*;
+use macroquad::{miniquad::window::dpi_scale, prelude::*};
 
-use crate::{ComponentStore, painter::Painter};
+use crate::ComponentStore;
 
 // ----------------------------------------------
 // Curl Menu Bar
@@ -44,23 +44,17 @@ pub fn build_menu_bar() -> CurlMenuBar {
     menu_bar
 }
 
-fn compute_menu_bar_geo(menu_bar: &CurlMenuBar, font_size: f32) {}
+fn compute_menu_bar_geo(menu_bar: &CurlMenuBar, font_size: u16) {}
 
 fn draw_menu_bar(
     x_offset: f32,
     y_offset: f32,
     height: f32,
     menu_bar: &CurlMenuBar,
-    font_size: f32,
-    painter: &Painter,
+    font: &Font,
+    font_size: u16,
 ) {
-    painter.rect(
-        x_offset,
-        y_offset,
-        screen_width() / painter.scale(),
-        height,
-        LIGHTGRAY,
-    );
+    draw_rectangle(x_offset, y_offset, screen_width(), height, LIGHTGRAY);
 
     let mut mx_offset: f32 = x_offset;
     let my_offset: f32 = y_offset;
@@ -69,10 +63,10 @@ fn draw_menu_bar(
     let text_height_offset: f32 = 0.75;
 
     for menu in &menu_bar.menus {
-        let text_dims = painter.measure(menu.name, font_size);
+        let text_dims = measure_text(menu.name, Some(font), font_size, 1.0);
         menu_width = text_dims.width + menu_pad;
 
-        painter.rect(
+        draw_rectangle(
             mx_offset + (height * 0.1),
             my_offset + (height * 0.1),
             menu_width,
@@ -80,11 +74,11 @@ fn draw_menu_bar(
             WHITE,
         );
 
-        painter.text(
+        draw_text(
             menu.name,
             mx_offset + (height * 0.1) + (menu_pad / 2.0),
             my_offset + (height * text_height_offset),
-            font_size,
+            font_size as f32,
             BLACK,
         );
 
@@ -96,11 +90,11 @@ fn draw_menu_bar(
 
     let mouse_coords = format!("[ {}, {} ]", mouse_x, mouse_y);
 
-    painter.text(
+    draw_text(
         &mouse_coords,
-        screen_width() / painter.scale() - 100.0,
+        screen_width() / dpi_scale() - 100.0,
         my_offset + (height * text_height_offset),
-        font_size,
+        font_size as f32,
         BLACK,
     );
 
@@ -115,8 +109,8 @@ fn draw_menu_bar(
 
 pub fn render_ui(
     menu_bar: &CurlMenuBar,
-    menu_font_size: f32,
-    painter: &Painter,
+    menu_font: &Font,
+    menu_font_size: u16,
     component_store: &mut ComponentStore,
 ) {
     let rxo = screen_width() / 2.0;
@@ -130,8 +124,8 @@ pub fn render_ui(
 
     draw_rectangle(rxo - rw / 2.0, ryo - rh / 2.0, rw, rh, GREEN);
 
-    compute_menu_bar_geo(&menu_bar, menu_font_size);
-    draw_menu_bar(0.0, 0.0, 25.0, &menu_bar, menu_font_size, &painter);
+    compute_menu_bar_geo(menu_bar, menu_font_size);
+    draw_menu_bar(0.0, 0.0, 25.0, menu_bar, menu_font, menu_font_size);
 
     // draw crosshair
     draw_rectangle(rxo, 0.0, 1.0, screen_height(), RED); // vertical half

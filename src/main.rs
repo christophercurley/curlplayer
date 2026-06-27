@@ -1,8 +1,6 @@
 pub mod curl_ui;
-pub mod painter;
 
 use macroquad::prelude::*;
-use painter::Painter;
 
 use crate::curl_ui::{build_menu_bar, render_ui};
 
@@ -57,18 +55,15 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let scale: f32 = 1.25;
     let font =
         load_ttf_font_from_bytes(include_bytes!("../assets/SourceSans3-Regular.ttf")).unwrap();
-
-    let painter = Painter::new(font, scale);
-    let menu_font_size: f32 = 18.0;
+    let menu_font_size: u16 = 18;
     let menu_bar = build_menu_bar();
 
     let mut component_store = ComponentStore::new();
 
     loop {
-        render_ui(&menu_bar, menu_font_size, &painter, &mut component_store);
+        render_ui(&menu_bar, &font, menu_font_size, &mut component_store);
 
         next_frame().await;
     }
