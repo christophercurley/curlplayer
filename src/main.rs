@@ -1,21 +1,37 @@
+pub mod app;
 pub mod curl_ui;
+pub mod primitives;
 
-use macroquad::prelude::*;
-
+use crate::app::AppState;
 use crate::curl_ui::{build_menu_bar, render_ui};
+use macroquad::prelude::*;
 
 // ----------------------------------------------
 // Component Store
 // ----------------------------------------------
 #[derive(Debug)]
 enum Shape {
-    Rect { x: f32, y: f32, w: f32, h: f32 },
+    Rect {
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+    },
+    RectRE {
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        color: Color,
+        radius: f32,
+    },
 }
 
 #[derive(Debug, PartialEq)]
 enum Group {
     Debug,
     MenuBar,
+    MenuBarPanel,
 }
 
 #[derive(Debug)]
@@ -63,6 +79,7 @@ fn window_conf() -> Conf {
         window_height: 720,
         // window_resizable: false,
         // fullscreen: true,
+        sample_count: 4,
         high_dpi: true,
         ..Default::default()
     }
@@ -78,12 +95,20 @@ async fn main() {
         load_ttf_font_from_bytes(include_bytes!("../assets/SourceSans3-Regular.ttf")).unwrap();
     font.set_filter(FilterMode::Nearest);
     let menu_font_size: u16 = 18;
+
+    let mut app_state = AppState::new();
     let menu_bar = build_menu_bar();
 
     let mut component_store = ComponentStore::new();
 
     loop {
-        render_ui(&menu_bar, &font, menu_font_size, &mut component_store);
+        render_ui(
+            &menu_bar,
+            &font,
+            menu_font_size,
+            &mut component_store,
+            &mut app_state,
+        );
 
         next_frame().await;
     }

@@ -1,6 +1,10 @@
 use macroquad::{miniquad::window::dpi_scale, prelude::*};
 
-use crate::{Component, ComponentStore, Group, Shape};
+use crate::{
+    Component, ComponentStore, Group, Shape,
+    app::{self, AppState},
+    primitives::draw_rectangle_re,
+};
 
 // ----------------------------------------------
 // Curl Menu Bar
@@ -52,6 +56,7 @@ fn compute_menu_bar_geo(
     font: &Font,
     font_size: u16,
     component_store: &mut ComponentStore,
+    app_state: &AppState,
 ) {
     let mut mx_offset: f32 = x_offset;
     let my_offset: f32 = y_offset;
@@ -73,6 +78,24 @@ fn compute_menu_bar_geo(
         let menu_bar_component = Component::new(menu.name, mbc_group, mbc_shape);
         component_store.add(menu_bar_component);
 
+        // compute panel dimensions if open
+        if app_state.open_menu == Some(menu.name) {
+            // mbpc = menu bar panel component
+            let mbpc_name = menu.name;
+            let mbpc_group = Group::MenuBarPanel;
+            let mbpc_shape = Shape::RectRE {
+                x: mx_offset,
+                y: height,
+                w: 125.0,
+                h: 250.0,
+                color: LIGHTGRAY,
+                radius: 10.0,
+            };
+
+            let menu_bar_panel_component = Component::new(mbpc_name, mbpc_group, mbpc_shape);
+            component_store.add(menu_bar_panel_component);
+        }
+
         mx_offset = mx_offset + (height * 0.1) + menu_width;
     }
 }
@@ -81,7 +104,6 @@ fn draw_menu_bar(
     x_offset: f32,
     y_offset: f32,
     height: f32,
-    menu_bar: &CurlMenuBar,
     font: &Font,
     font_size: u16,
     component_store: &ComponentStore,
@@ -97,7 +119,7 @@ fn draw_menu_bar(
         .filter(|c| c.group == Group::MenuBar)
     {
         if let Shape::Rect { x, y, w, h } = &component.shape {
-            draw_rectangle(*x, *y, *w, *h, WHITE);
+            draw_rectangle(*x, *y, *w, *h, LIGHTGRAY);
 
             draw_text_ex(
                 &component.name,
@@ -112,6 +134,38 @@ fn draw_menu_bar(
                     color: BLACK,
                 },
             );
+        }
+    }
+
+    for component in component_store
+        .components
+        .iter()
+        .filter(|c| c.group == Group::MenuBarPanel)
+    {
+        if let Shape::RectRE {
+            x,
+            y,
+            w,
+            h,
+            color,
+            radius,
+        } = &component.shape
+        {
+            draw_rectangle_re(*x, *y, *w, *h, *color, *radius);
+
+            // draw_text_ex(
+            //     &component.name,
+            //     *x + (menu_pad / 2.0),
+            //     *y + (height * text_height_offset),
+            //     TextParams {
+            //         font: Some(font),
+            //         font_size,
+            //         font_scale: 1.0,
+            //         font_scale_aspect: 1.0,
+            //         rotation: 0.0,
+            //         color: BLACK,
+            //     },
+            // );
         }
     }
 
@@ -158,18 +212,18 @@ fn compute_debug_geo(component_store: &mut ComponentStore) {
 
     component_store.add(debug_rect_component);
 
-    // offset rect
-    let drc2_name = "Debug Rect 2";
-    let drc2_group = Group::Debug;
-    let drc2_shape = Shape::Rect {
-        x: rx - rw / 2.0 - 150.0,
-        y: ry - rh / 2.0 - 150.0,
-        w: rw,
-        h: rh,
-    };
-    let debug_rect_component2 = Component::new(drc2_name, drc2_group, drc2_shape);
+    // // offset rect
+    // let drc2_name = "Debug Rect 2";
+    // let drc2_group = Group::Debug;
+    // let drc2_shape = Shape::Rect {
+    //     x: rx - rw / 2.0 - 150.0,
+    //     y: ry - rh / 2.0 - 150.0,
+    //     w: rw,
+    //     h: rh,
+    // };
+    // let debug_rect_component2 = Component::new(drc2_name, drc2_group, drc2_shape);
 
-    component_store.add(debug_rect_component2);
+    // component_store.add(debug_rect_component2);
 }
 
 fn draw_debug(component_store: &ComponentStore) {
@@ -188,7 +242,7 @@ fn draw_debug(component_store: &ComponentStore) {
 // UI Render Engine
 // ----------------------------------------------
 
-fn handle_input(component_store: &ComponentStore) {
+fn handle_input(component_store: &ComponentStore, app_state: &mut AppState) {
     if is_mouse_button_pressed(MouseButton::Left) {
         let (mouse_x, mouse_y) = mouse_position();
         // component_clicked: &Component;
@@ -200,6 +254,29 @@ fn handle_input(component_store: &ComponentStore) {
                 if mouse_x >= *x && mouse_x <= *x + *w && mouse_y >= *y && mouse_y <= *y + *h {
                     let mut component_clicked = &component;
                     println! {"{} clicked!", component_clicked.name};
+
+                    if app_state.open_menu == Some(component.name) {
+                        app_state.open_menu = None;
+                    } else {
+                        app_state.open_menu = Some(component.name);
+                    }
+
+                    println!("open_menu = {:?}", app_state.open_menu);
+                }
+            }
+
+            if let Shape::RectRE {
+                x,
+                y,
+                w,
+                h,
+                color,
+                radius,
+            } = &component.shape
+            {
+                if mouse_x >= *x && mouse_x <= *x + *w && mouse_y >= *y && mouse_y <= *y + *h {
+                    let mut component_clicked = &component;
+                    println! {"{}{:?} clicked!", component_clicked.name, component.group};
                 }
             }
         }
@@ -215,6 +292,7 @@ pub fn render_ui(
     menu_font: &Font,
     menu_font_size: u16,
     component_store: &mut ComponentStore,
+    app_state: &mut AppState,
 ) {
     let rxo = screen_width() / 2.0;
     let ryo = screen_height() / 2.0;
@@ -223,8 +301,20 @@ pub fn render_ui(
 
     clear_background(WHITE);
 
+    // USELESS BULLSHIT
     compute_debug_geo(component_store);
     draw_debug(component_store);
+
+    draw_rectangle_re(200.0, 200.0, 70.0, 300.0, BLUE, 7.5);
+
+    draw_circle(950.0, 150.0, 120.0, BEIGE);
+    draw_poly(950.0, 500.0, 64, 120.0, 0.0, ORANGE);
+
+    // draw crosshair
+    draw_rectangle(rxo, 0.0, 1.0, screen_height(), RED); // vertical half
+    draw_rectangle(0.0, ryo, screen_width(), 1.0, RED); // horiz half
+
+    // END USELESS BULLSHIT
 
     compute_menu_bar_geo(
         0.0,
@@ -234,21 +324,10 @@ pub fn render_ui(
         menu_font,
         menu_font_size,
         component_store,
+        app_state,
     );
 
-    draw_menu_bar(
-        0.0,
-        0.0,
-        25.0,
-        menu_bar,
-        menu_font,
-        menu_font_size,
-        component_store,
-    );
+    draw_menu_bar(0.0, 0.0, 25.0, menu_font, menu_font_size, component_store);
 
-    // draw crosshair
-    draw_rectangle(rxo, 0.0, 1.0, screen_height(), RED); // vertical half
-    draw_rectangle(0.0, ryo, screen_width(), 1.0, RED); // horiz half
-
-    handle_input(component_store);
+    handle_input(component_store, app_state);
 }
